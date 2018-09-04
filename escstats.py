@@ -99,31 +99,18 @@ def main():
     channel_id = find_channel(channel_name)
 
     # Set up date range
-    todayDate = datetime.datetime.today()
-    enddate_raw = todayDate.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    todaydate = datetime.datetime.today()
+    enddate_raw = todaydate.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     startdate_raw = enddate_raw - relativedelta(months=1)
 
     # Convert to Slack friendly timestamp format
     enddate = enddate_raw.timestamp()
     startdate = startdate_raw.timestamp()
 
-    # Acquire first batch of message history
-    messageraw = sc.api_call(
-        "conversations.history",
-        channel=channel_id,
-        inclusive=True,
-        latest=enddate,
-        oldest=startdate
-    )
-
+    # Pull channel history
     cursor = ''
-    if messageraw['response_metadata']['next_cursor']:
-        cursor = messageraw['response_metadata']['next_cursor']
-
-    esccount(messageraw)
-
-    # If additional batches of messages available pull and process
-    while cursor:
+    paginate = True
+    while paginate:
         messageraw = sc.api_call(
             "conversations.history",
             channel=channel_id,
@@ -136,8 +123,7 @@ def main():
         try:
             cursor = messageraw['response_metadata']['next_cursor']
         except KeyError:
-            cursor = ''
-
+            paginate = False
 
     # Generate report
     print(f'\nStart Date {startdate_raw} => {enddate_raw}\n')
