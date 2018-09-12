@@ -14,6 +14,9 @@ user_resolved = Counter()
 user_escalated = Counter()
 user_rejected = Counter()
 
+# escalations channel ID
+channel_id = 'C024HPA08'
+
 
 def permalink(message, channel):
     """Create URL message link from internal Slack message ID"""
@@ -22,6 +25,7 @@ def permalink(message, channel):
         channel=channel,
         message_ts=message['ts']
     )
+
     if permalink_req['ok']:
         return permalink_req['permalink']
     else:
@@ -59,6 +63,7 @@ def esccount(messagelist):
                     results['rejected'] += 1
                     for user in reaction['users']:
                         user_rejected[user] += 1
+                        #print(permalink(message,channel_id))
                 elif 'jira' in reaction.values():
                     results['escalated'] += 1
                     for user in reaction['users']:
@@ -70,38 +75,19 @@ def userreport(header, userdict):
     print('\n' + header)
     if userdict:
         for k, v in userdict.items():
-            print(f'{userinfo(k):12} => {v:3d} times')
+            print(f'{userinfo(k):12} => {v:3} times  ({v/sum(userdict.values()):.1%})')
     else:
         print("No occurrence during time frame.")
-
-
-def find_channel(channel_alias):
-    """Find Slack internal channel ID from friendly name"""
-    channel_id = None
-    channels = sc.api_call(
-        "channels.list",
-        exclude_archived=1
-    )
-
-    for channel in channels['channels']:
-        if channel['name'] == channel_alias:
-            channel_id = channel['id']
-
-    if channel_id is None:
-        raise Exception("cannot find channel " + channel_alias)
-
-    return channel_id
+    print(f'Total        => {sum(userdict.values()):3}')
 
 
 def main():
-    # Channel to pull stats from
-    channel_name = 'escalations'
-    channel_id = find_channel(channel_name)
-
     # Set up date range
     todaydate = datetime.datetime.today()
-    enddate_raw = todaydate.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-    startdate_raw = enddate_raw - relativedelta(months=1)
+    #enddate_raw = todaydate.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    #startdate_raw = enddate_raw - relativedelta(months=1)
+    startdate_raw = todaydate.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    enddate_raw = datetime.datetime.today()
 
     # Convert to Slack friendly timestamp format
     enddate = enddate_raw.timestamp()
@@ -127,13 +113,18 @@ def main():
 
     # Generate report
     print(f'\nStart Date {startdate_raw} => {enddate_raw}\n')
-    print(f'Escalations Researched:           {results["researched"]:>5}')
-    print(f'Escalations Resolved by CloudOps: {results["resolved"]:>5}')
-    print(f'Escalations Non-actionable:       {results["rejected"]:>5}')
-    print(f'Escalated out of CloudOps:        {results["escalated"]:>5}')
-    print(f'Total Escalations:                {sum(results.values()):>5}\n')
+    print(f'Total Escalations received:{results["researched"]:>5}')
+    print(f'Resolved by CloudOps:      {results["resolved"]:>5}  '
+          f'({results["resolved"]/results["researched"]:.1%})')
+    print(f'Non-actionable:            {results["rejected"]:>5}  '
+          f'({results["rejected"]/results["researched"]:.1%})')
+    print(f'Escalated out of CloudOps: {results["escalated"]:>5}  '
+          f'({results["escalated"]/results["researched"]:.1%})')
+    print(f'Incomplete escalations:    '
+          f'{results["researched"]-(results["resolved"]+results["rejected"]+results["escalated"]):>5}')
+    # print(f'Total Escalations:               {sum(results.values()):>5}\n')
 
-    print('Per User Breakdown:')
+    print('\nPer User Breakdown:')
     userreport('Researched by:', user_researched)
     userreport('Resolved by:', user_resolved)
     userreport('Non-actionable by:', user_rejected)
