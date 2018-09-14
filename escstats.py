@@ -31,6 +31,7 @@ cloudopsteam = {
           'U02G9QH7Y': 'psingh'
           }
 
+
 def permalink(message, channel):
     """Create URL message link from internal Slack message ID"""
     permalink_req = sc.api_call(
@@ -70,8 +71,8 @@ def esccount(messagelist):
 def main():
     # Set up date range
     todaydate = datetime.datetime.today()
-    #enddate_raw = todaydate.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-    #startdate_raw = enddate_raw - relativedelta(months=1)
+    # enddate_raw = todaydate.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    # startdate_raw = enddate_raw - relativedelta(months=1)
     startdate_raw = todaydate.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     enddate_raw = datetime.datetime.today()
 
@@ -126,12 +127,15 @@ def main():
         if total < user_researched[user]:
             total = user_researched[user] - total
             print(f'Incomplete: {total:>3} ({total/user_researched[user]:.1%})')
+        if (user_resolved[user] + user_rejected[user] + user_escalated[user]) > user_researched[user]:
+            print('Inconsistent data: review for accuracy!')
 
     print('\nFollowup Items: (most recent first)')
-    for user, timestamp, permalink in followup:
+    for user, timestamp, link in followup:
         print(f'Flagging User: {user}\n'
               f'Timestamp: {datetime.datetime.fromtimestamp(int(float(timestamp))).isoformat()}\n'
-              f'Link: {permalink}')
+              f'Link: {link}')
+
 
 if __name__ == '__main__':
     main()
