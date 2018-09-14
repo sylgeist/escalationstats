@@ -2,21 +2,34 @@ import os
 from slackclient import SlackClient
 import datetime
 from dateutil.relativedelta import relativedelta
-from collections import defaultdict, Counter
+from collections import Counter
 
 SLACK_API_TOKEN = os.environ.get('SLACK_API_TOKEN')
 sc = SlackClient(SLACK_API_TOKEN)
 
 # Results storage
-results = defaultdict(int)
 user_researched = Counter()
 user_resolved = Counter()
 user_escalated = Counter()
 user_rejected = Counter()
+followup = []
 
 # escalations channel ID
 channel_id = 'C024HPA08'
 
+# slack to common name mapping
+cloudopsteam = {
+          'U08SNDXBN': 'nharasym',
+          'U055571G9': 'afoster',
+          'UB4V03GGG': 'akhan',
+          'U04RPUJLH': 'cblake',
+          'U02EU172H': 'cweeks',
+          'U027BHN6C': 'kd',
+          'UCMH5BGCS': 'dhalperovich',
+          'U04V9S0JJ': 'genpage',
+          'UBP7DD7AB': 'mbrewka',
+          'U02G9QH7Y': 'psingh'
+          }
 
 def permalink(message, channel):
     """Create URL message link from internal Slack message ID"""
@@ -32,53 +45,26 @@ def permalink(message, channel):
         return permalink_req['error']
 
 
-def userinfo(user_id):
-    """Find friendly user name from Slack internal user ID"""
-    user_req = sc.api_call(
-        "users.info",
-        user=user_id
-    )
-    if user_req['ok']:
-        return user_req['user']['name']
-    else:
-        return user_req['error']
-
-
 def esccount(messagelist):
     """Parse channel conversations and calculate stats from message reactions"""
-    global user_researched, user_resolved, user_rejected, user_escalated
+    global user_researched, user_resolved, user_rejected, user_escalated, followup
 
     for message in messagelist['messages']:
         if 'reactions' in message.keys():
             for reaction in message['reactions']:
                 if 'eyes' in reaction.values():
-                    results['researched'] += 1
                     for user in reaction['users']:
-                        user_researched[user] += 1
+                        user_researched[cloudopsteam[user]] += 1
                 elif 'white_check_mark' in reaction.values():
-                    results['resolved'] += 1
                     for user in reaction['users']:
-                        user_resolved[user] += 1
+                        user_resolved[cloudopsteam[user]] += 1
                 elif 'hand' in reaction.values():
-                    results['rejected'] += 1
                     for user in reaction['users']:
-                        user_rejected[user] += 1
-                        #print(permalink(message,channel_id))
+                        user_rejected[cloudopsteam[user]] += 1
+                        followup.append([cloudopsteam[user], message['ts'], permalink(message, channel_id)])
                 elif 'jira' in reaction.values():
-                    results['escalated'] += 1
                     for user in reaction['users']:
-                        user_escalated[user] += 1
-
-
-def userreport(header, userdict):
-    """Helper function to print per user report substituting friendly user names for Slack ID"""
-    print('\n' + header)
-    if userdict:
-        for k, v in userdict.items():
-            print(f'{userinfo(k):12} => {v:3} times  ({v/sum(userdict.values()):.1%})')
-    else:
-        print("No occurrence during time frame.")
-    print(f'Total        => {sum(userdict.values()):3}')
+                        user_escalated[cloudopsteam[user]] += 1
 
 
 def main():
@@ -113,23 +99,39 @@ def main():
 
     # Generate report
     print(f'\nStart Date {startdate_raw} => {enddate_raw}\n')
-    print(f'Total Escalations received:{results["researched"]:>5}')
-    print(f'Resolved by CloudOps:      {results["resolved"]:>5}  '
-          f'({results["resolved"]/results["researched"]:.1%})')
-    print(f'Non-actionable:            {results["rejected"]:>5}  '
-          f'({results["rejected"]/results["researched"]:.1%})')
-    print(f'Escalated out of CloudOps: {results["escalated"]:>5}  '
-          f'({results["escalated"]/results["researched"]:.1%})')
+
+    print(f'Total Events Received:     {sum(user_researched.values()):>3}\n')
+
+    print(f'Resolved by CloudOps:      {sum(user_resolved.values()):>3} '
+          f'({sum(user_resolved.values())/sum(user_researched.values()):.1%})')
+
+    print(f'Non-actionable:            {sum(user_rejected.values()):>3} '
+          f'({sum(user_rejected.values())/sum(user_researched.values()):.1%})')
+
+    print(f'Escalated out of CloudOps: {sum(user_escalated.values()):>3} '
+          f'({sum(user_escalated.values())/sum(user_researched.values()):.1%})')
+
     print(f'Incomplete escalations:    '
-          f'{results["researched"]-(results["resolved"]+results["rejected"]+results["escalated"]):>5}')
-    # print(f'Total Escalations:               {sum(results.values()):>5}\n')
+          f'{sum(user_researched.values())-sum(user_resolved.values())-sum(user_rejected.values())-sum(user_escalated.values()):>3}')
 
-    print('\nPer User Breakdown:')
-    userreport('Researched by:', user_researched)
-    userreport('Resolved by:', user_resolved)
-    userreport('Non-actionable by:', user_rejected)
-    userreport('Escalated by:', user_escalated)
+    for user in sorted(cloudopsteam.values()):
+        print(f'\nUser stats for {user} ({user_researched[user]} Total Events):')
+        if user_resolved[user]:
+            print(f'Resolved:   {user_resolved[user]:>3} ({user_resolved[user]/user_researched[user]:.1%})')
+        if user_rejected[user]:
+            print(f'Rejected:   {user_rejected[user]:>3} ({user_rejected[user]/user_researched[user]:.1%})')
+        if user_escalated[user]:
+            print(f'Escalated:  {user_escalated[user]:>3} ({user_escalated[user]/user_researched[user]:.1%})')
+        total = (user_escalated[user] + user_rejected[user] + user_resolved[user])
+        if total < user_researched[user]:
+            total = user_researched[user] - total
+            print(f'Incomplete: {total:>3} ({total/user_researched[user]:.1%})')
 
+    print('\nFollowup Items: (most recent first)')
+    for user, timestamp, permalink in followup:
+        print(f'Flagging User: {user}\n'
+              f'Timestamp: {datetime.datetime.fromtimestamp(int(float(timestamp))).isoformat()}\n'
+              f'Link: {permalink}')
 
 if __name__ == '__main__':
     main()
