@@ -5,7 +5,11 @@ from dateutil.relativedelta import relativedelta
 from collections import Counter
 
 SLACK_API_TOKEN = os.environ.get('SLACK_API_TOKEN')
-sc = SlackClient(SLACK_API_TOKEN)
+try:
+    sc = SlackClient(SLACK_API_TOKEN)
+except Exception as err:
+    print('Error:', str(err))
+    exit(1)
 
 # Results storage
 user_researched = Counter()
@@ -34,16 +38,20 @@ cloudopsteam = {
 
 def permalink(message, channel):
     """Create URL message link from internal Slack message ID"""
-    permalink_req = sc.api_call(
-        "chat.getPermalink",
-        channel=channel,
-        message_ts=message['ts']
-    )
-
-    if permalink_req['ok']:
-        return permalink_req['permalink']
+    try:
+        permalink_req = sc.api_call(
+            "chat.getPermalink",
+            channel=channel,
+            message_ts=message['ts']
+        )
+    except Exception as err:
+        print('Error:', str(err))
+        exit(1)
     else:
-        return permalink_req['error']
+        if permalink_req['ok']:
+            return permalink_req['permalink']
+        else:
+            return permalink_req['error']
 
 
 def esccount(messagelist):
@@ -84,15 +92,21 @@ def main():
     cursor = ''
     paginate = True
     while paginate:
-        messageraw = sc.api_call(
-            "conversations.history",
-            channel=channel_id,
-            inclusive=True,
-            latest=enddate,
-            oldest=startdate,
-            cursor=cursor
-        )
-        esccount(messageraw)
+        try:
+            messageraw = sc.api_call(
+                "conversations.history",
+                channel=channel_id,
+                inclusive=True,
+                latest=enddate,
+                oldest=startdate,
+                cursor=cursor
+            )
+        except Exception as err:
+            print('Error:', str(err))
+            exit(1)
+        else:
+            esccount(messageraw)
+
         try:
             cursor = messageraw['response_metadata']['next_cursor']
         except KeyError:
