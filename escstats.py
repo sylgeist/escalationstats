@@ -1,5 +1,5 @@
 import os
-from slackclient import SlackClient
+from slack import WebClient
 import datetime
 from dateutil.relativedelta import relativedelta
 from collections import Counter
@@ -7,10 +7,11 @@ from collections import Counter
 SLACK_API_TOKEN = os.environ.get('SLACK_API_TOKEN')
 
 try:
-    sc = SlackClient(SLACK_API_TOKEN)
+    sc = WebClient(SLACK_API_TOKEN, timeout=90)
 except Exception as err:
-    print('Error:', str(err))
+    print('Slack API Client Error:', str(err))
     exit(1)
+
 
 # Results storage
 user_researched = Counter()
@@ -21,57 +22,35 @@ user_incomplete = Counter()
 followup = []
 incomplete = []
 
-# escalations channel ID
+# escalations channel ID, obtained from Slack app
 channel_id = 'C024HPA08'
 
-# slack to common name mapping
+# slack to common name mapping, hardcoded to filter on current members of team
 cloudopsteam = {
           'U08SNDXBN': 'nharasym',
           'U055571G9': 'afoster',
           'UB4V03GGG': 'akhan',
           'U04RPUJLH': 'cblake',
-          'U02EU172H': 'cweeks',
+          'U6RCW3R0R': 'mfuller',
           'U027BHN6C': 'kd',
           'UCMH5BGCS': 'dhalperovich',
-          'U04V9S0JJ': 'genpage',
+          'U02UB5H07': 'ncole',
           'UBP7DD7AB': 'mbrewka',
-          'U02G9QH7Y': 'psingh'
+          'U02G9QH7Y': 'psingh',
+          'U7SC0CB1P': 'rbennett'
           }
 
 
 def permalink(message, channel):
     """Create URL message link from internal Slack message ID"""
-    try:
-        permalink_req = sc.api_call(
-            "chat.getPermalink",
-            channel=channel,
-            message_ts=message['ts']
-        )
-    except Exception as err:
-        print('Error:', str(err))
-        exit(1)
-    else:
-        if permalink_req['ok']:
-            return permalink_req['permalink']
-        else:
-            return permalink_req['error']
 
+    permalink_req = sc.chat_getPermalink(
+        channel=channel,
+        message_ts=message['ts']
+    )
 
-def user_info(user_id):
-    """Find friendly user name from Slack internal user ID"""
-    try:
-        user_req = sc.api_call(
-            "users.info",
-            user=user_id
-        )
-    except Exception as err:
-        print('Error:', str(err))
-        exit(1)
-    else:
-        if user_req['ok']:
-            return user_req['user']['name']
-        else:
-            return user_req['error']
+    assert permalink_req['ok'], "Permalink GET failed"
+    return permalink_req['permalink']
 
 
 def esccount(messagelist):
@@ -80,6 +59,7 @@ def esccount(messagelist):
 
     for message in messagelist['messages']:
         if 'reactions' in message.keys():
+            # the eyes emoji triggers further parsing. The reduces general conversations from polluting the data
             if any(reaction['name'] == 'eyes' for reaction in message['reactions']):
                 for reaction in message['reactions']:
                     if 'eyes' in reaction['name']:
@@ -122,33 +102,23 @@ def main():
     # enddate_raw = datetime.datetime.today()
 
     # Convert to Slack friendly timestamp format
-    enddate = enddate_raw.timestamp()
-    startdate = startdate_raw.timestamp()
+    enddate = str(enddate_raw.timestamp())
+    startdate = str(startdate_raw.timestamp())
 
     # Pull channel history
-    cursor = ''
-    paginate = True
-    while paginate:
-        try:
-            messageraw = sc.api_call(
-                "conversations.history",
-                channel=channel_id,
-                inclusive=True,
-                latest=enddate,
-                oldest=startdate,
-                cursor=cursor
-            )
-        except Exception as err:
-            print('Error:', str(err))
-            exit(1)
-        else:
-            # TODO check for auth errors in http response
-            esccount(messageraw)
-
-        try:
-            cursor = messageraw['response_metadata']['next_cursor']
-        except KeyError:
-            paginate = False
+    try:
+        messageraw = sc.conversations_history(
+            channel=channel_id,
+            inclusive='true',
+            latest=enddate,
+            oldest=startdate,
+        )
+    except Exception as err:
+        print('Slack API Error pulling channel history', err)
+        exit(1)
+    else:
+        for messagelist in messageraw:
+            esccount(messagelist)
 
     # Generate report
     print(f'\nEscalation Stats for: {startdate_raw.strftime("%B")} {startdate_raw.year}\n')
@@ -191,6 +161,7 @@ def main():
         print(f'Starting User: {user}\n'
               f'Timestamp: {datetime.datetime.fromtimestamp(int(float(timestamp))).isoformat()}\n'
               f'Link: {link}')
+
 
 if __name__ == '__main__':
     main()
