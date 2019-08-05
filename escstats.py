@@ -57,40 +57,31 @@ def esccount(messagelist):
     """Parse channel conversations and calculate stats from message reactions"""
     global user_researched, user_resolved, user_rejected, user_escalated, user_incomplete, followup, incomplete
 
+    # Iterate through the list looking for reactions and users of interest
     for message in messagelist['messages']:
         if 'reactions' in message.keys():
-            # the eyes emoji triggers further parsing. The reduces general conversations from polluting the data
-            if any(reaction['name'] == 'eyes' for reaction in message['reactions']):
-                for reaction in message['reactions']:
-                    if 'eyes' in reaction['name']:
-                        for user in reaction['users']:
-                            if user in cloudopsteam:
-                                user_researched[cloudopsteam[user]] += 1
-                                if len(message['reactions']) == 1:
-                                    user_incomplete[cloudopsteam[user]] += 1
-                                    incomplete.append(
-                                        [cloudopsteam[user], message['ts'], permalink(message, channel_id)])
-                            else:
-                                continue
-                    elif 'white_check_mark' in reaction['name']:
-                        for user in reaction['users']:
-                            if user in cloudopsteam:
-                                user_resolved[cloudopsteam[user]] += 1
-                            else:
-                                continue
-                    elif 'hand' in reaction['name']:
-                        for user in reaction['users']:
-                            if user in cloudopsteam:
-                                user_rejected[cloudopsteam[user]] += 1
-                                followup.append([cloudopsteam[user], message['ts'], permalink(message, channel_id)])
-                            else:
-                                continue
-                    elif 'jira' in reaction['name']:
-                        for user in reaction['users']:
-                            if user in cloudopsteam:
-                                user_escalated[cloudopsteam[user]] += 1
-                            else:
-                                continue
+            for reaction in message['reactions']:
+                if 'eyes' in reaction['name']:
+                    for user in reaction['users']:
+                        if user in cloudopsteam:
+                            user_researched[cloudopsteam[user]] += 1
+                            if len(message['reactions']) == 1:
+                                user_incomplete[cloudopsteam[user]] += 1
+                                incomplete.append(
+                                    [cloudopsteam[user], message['ts'], permalink(message, channel_id)])
+                elif 'white_check_mark' in reaction['name']:
+                    for user in reaction['users']:
+                        if user in cloudopsteam:
+                            user_resolved[cloudopsteam[user]] += 1
+                elif 'hand' in reaction['name']:
+                    for user in reaction['users']:
+                        if user in cloudopsteam:
+                            user_rejected[cloudopsteam[user]] += 1
+                            followup.append([cloudopsteam[user], message['ts'], permalink(message, channel_id)])
+                elif 'jira' in reaction['name']:
+                    for user in reaction['users']:
+                        if user in cloudopsteam:
+                            user_escalated[cloudopsteam[user]] += 1
 
 
 def main():
