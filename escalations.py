@@ -1,9 +1,9 @@
-import slackClient from slack
+from slack import WebClient
 
 
 def slackconnect(slacktoken):
     try:
-        sc = slack.WebClient(slacktoken, timeout=90)
+        sc = WebClient(slacktoken, timeout=90)
     except Exception as err:
         print('Slack API Client Error:', str(err))
         exit(1)
