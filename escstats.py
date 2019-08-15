@@ -114,10 +114,11 @@ def main():
             print(f'\tEscalated:  {user_escalated[user]:>3} ({user_escalated[user]/user_researched[user]:.1%})')
         if user_incomplete[user]:
             print(f'\tIncomplete: {user_incomplete[user]:>3} ({user_incomplete[user]/user_researched[user]:.1%})')
+        if user_response[user]:
+            print(f'\tAvg Resp:   {user_response[user] / user_researched[user]:>3.1f} mins')
         if (user_resolved[user] + user_rejected[user] + user_escalated[user]) > user_researched[user]:
             print('\tInconsistent data: review for accuracy!')
-        if user_response[user]:
-            print(f'\tAvg Resp:   {user_response[user]/user_researched[user]:>3.1f} mins')
+
 
     print('\nFollowup Items: (most recent first)')
     for user, timestamp, link in followup:
