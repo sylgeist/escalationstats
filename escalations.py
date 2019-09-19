@@ -55,5 +55,6 @@ cloudopsteam = {
           'U02UB5H07': 'ncole',
           'UBP7DD7AB': 'mbrewka',
           'U02G9QH7Y': 'psingh',
-          'U7SC0CB1P': 'rbennett'
+          'U7SC0CB1P': 'rbennett',
+          'U1B391989': 'sbeckstrand'
           }

@@ -37,7 +37,7 @@ def main():
 
     # Set up date range
     enddate_raw = datetime.datetime.today()
-    startdate_raw = enddate_raw - relativedelta(months=2)
+    startdate_raw = enddate_raw - relativedelta(months=1)
 
     messagelist = escalations.channelhistory(sc, channel_id, startdate_raw, enddate_raw)
 
