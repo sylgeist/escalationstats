@@ -51,10 +51,10 @@ cloudopsteam = {
           'U04RPUJLH': 'cblake',
           'U6RCW3R0R': 'mfuller',
           'U027BHN6C': 'kd',
-          'UCMH5BGCS': 'dhalperovich',
           'U02UB5H07': 'ncole',
           'UBP7DD7AB': 'mbrewka',
           'U02G9QH7Y': 'psingh',
           'U7SC0CB1P': 'rbennett',
-          'U1B391989': 'sbeckstrand'
+          'U1B391989': 'sbeckstrand',
+          'U1D1FGYSJ': 'efox'
           }
