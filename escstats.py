@@ -5,7 +5,7 @@ from collections import Counter
 import escalations
 import statistics
 
-channel_id = 'C024HPA08'  # escalations channel ID
+channel_id = 'CXXXXXXX'  # escalations channel ID
 cloudopsteam = escalations.cloudopsteam  # cloudops team to slack ID mapping
 SLACK_API_TOKEN = os.environ.get('SLACK_API_TOKEN')  # slack token in ENV variable
 sc = escalations.slackconnect(SLACK_API_TOKEN)

@@ -4,8 +4,8 @@ import statistics
 import escalations
 import os
 
-channel_id = 'C024HPA08'  # escalations channel ID
-cloudopsuser = 'UB4V03GGG'  # cloudops team to slack ID mapping
+channel_id = 'CXXXXXX'  # escalations channel ID
+cloudopsuser = 'UXXXXX'  # cloudops team to slack ID mapping
 SLACK_API_TOKEN = os.environ.get('SLACK_API_TOKEN')  # slack token in ENV variable
 sc = escalations.slackconnect(SLACK_API_TOKEN)
 esclist = []
@@ -37,7 +37,7 @@ def main():
 
     # Set up date range
     enddate_raw = datetime.datetime.today()
-    startdate_raw = enddate_raw - relativedelta(months=1)
+    startdate_raw = enddate_raw - relativedelta(months=6)
 
     messagelist = escalations.channelhistory(sc, channel_id, startdate_raw, enddate_raw)
 

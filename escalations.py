@@ -45,16 +45,16 @@ def channelhistory(sc, channel_id, startdate, enddate):
 
 
 cloudopsteam = {
-          'U08SNDXBN': 'nharasym',
-          'U055571G9': 'afoster',
-          'UB4V03GGG': 'akhan',
-          'U04RPUJLH': 'cblake',
-          'U6RCW3R0R': 'mfuller',
-          'U027BHN6C': 'kd',
-          'U02UB5H07': 'ncole',
-          'UBP7DD7AB': 'mbrewka',
-          'U02G9QH7Y': 'psingh',
-          'U7SC0CB1P': 'rbennett',
-          'U1B391989': 'sbeckstrand',
-          'U1D1FGYSJ': 'efox'
+          'UXXXXXXXX': 'name1',
+          'UXXXXXXXX': 'name2',
+          'UXXXXXXXX': 'name3',
+          'UXXXXXXXX': 'name4',
+          'UXXXXXXXX': 'name5',
+          'UXXXXXXXX': 'name6',
+          'UXXXXXXXX': 'name7',
+          'UXXXXXXXX': 'name8',
+          'UXXXXXXXX': 'name9',
+          'UXXXXXXXX': 'name10',
+          'UXXXXXXXX': 'name11',
+          'UXXXXXXXX': 'name12'
           }
